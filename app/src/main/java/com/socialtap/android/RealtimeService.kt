@@ -86,6 +86,7 @@ class RealtimeService : Service() {
                 ContextCompat.startForegroundService(context, Intent(context, RealtimeService::class.java))
             } catch (e: Exception) {
                 // Not allowed right now (app in background). It starts the next time the app is opened.
+                android.util.Log.w("SocialTap", "Background connection did not start: ${e.message}")
             }
         }
 

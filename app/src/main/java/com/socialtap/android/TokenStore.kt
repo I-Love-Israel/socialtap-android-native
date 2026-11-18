@@ -58,6 +58,23 @@ class TokenStore(context: Context) {
         prefs.edit().remove(KEY_PENDING_VERIFIER).remove(KEY_PENDING_STATE).apply()
     }
 
+    val pendingGoogleVerifier: String?
+        get() = prefs.getString(KEY_GOOGLE_VERIFIER, null)
+
+    val pendingGoogleState: String?
+        get() = prefs.getString(KEY_GOOGLE_STATE, null)
+
+    fun savePendingGoogle(verifier: String, state: String) {
+        prefs.edit()
+            .putString(KEY_GOOGLE_VERIFIER, verifier)
+            .putString(KEY_GOOGLE_STATE, state)
+            .apply()
+    }
+
+    fun clearPendingGoogle() {
+        prefs.edit().remove(KEY_GOOGLE_VERIFIER).remove(KEY_GOOGLE_STATE).apply()
+    }
+
     fun saveTokens(access: String, refresh: String?) {
         val editor = prefs.edit().putString(KEY_ACCESS, access)
         if (!refresh.isNullOrEmpty()) editor.putString(KEY_REFRESH, refresh)
@@ -75,5 +92,7 @@ class TokenStore(context: Context) {
         const val KEY_USERNAME = "username"
         const val KEY_PENDING_VERIFIER = "pending_verifier"
         const val KEY_PENDING_STATE = "pending_state"
+        const val KEY_GOOGLE_VERIFIER = "pending_google_verifier"
+        const val KEY_GOOGLE_STATE = "pending_google_state"
     }
 }

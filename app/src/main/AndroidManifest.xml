@@ -40,6 +40,11 @@
                     android:host="oauth"
                     android:path="/callback"
                     android:scheme="socialtap" />
+                <!-- Google sign-in handoff: socialtap://auth/google -->
+                <data
+                    android:host="auth"
+                    android:path="/google"
+                    android:scheme="socialtap" />
             </intent-filter>
         </activity>
 
@@ -59,6 +64,16 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps the SocialTap chat connection open for messages and voice calls" />
         </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".CallService"

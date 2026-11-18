@@ -32,9 +32,11 @@ object Notifications {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
-            NotificationChannel(CH_REALTIME, "Connection", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Keeps SocialTap connected in the background"
+            NotificationChannel(CH_REALTIME, "Connection", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Shows when SocialTap is connected in the background"
                 setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
             }
         )
         manager.createNotificationChannel(
@@ -118,6 +120,9 @@ object Notifications {
             .build()
         NotificationManagerCompat.from(context).notify(ID_INCOMING_CALL, notification)
     }
+
+    /** True when Android will actually show SocialTap notifications (permission granted and not blocked). */
+    fun allowed(context: Context): Boolean = canNotify(context)
 
     fun cancelIncoming(context: Context) {
         NotificationManagerCompat.from(context).cancel(ID_INCOMING_CALL)

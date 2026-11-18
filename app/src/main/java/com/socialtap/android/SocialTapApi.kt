@@ -6,6 +6,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -23,7 +24,7 @@ class SocialTapApi(private val tokens: TokenStore) {
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(180, TimeUnit.SECONDS)
         .build()
 
     private val refreshLock = Mutex()
@@ -86,6 +87,58 @@ class SocialTapApi(private val tokens: TokenStore) {
         return json.optJSONObject("message") ?: JSONObject()
     }
 
+    /** Sends a file (max 10 MiB) as a new message in the chat, with an optional caption. Returns the message. */
+    suspend fun uploadAttachment(
+        chatId: Long,
+        filename: String,
+        mimeType: String,
+        bytes: ByteArray,
+        caption: String
+    ): JSONObject {
+        val builder = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("chat_id", chatId.toString())
+        if (caption.isNotBlank()) builder.addFormDataPart("message", caption)
+        builder.addFormDataPart(
+            "file",
+            filename,
+            bytes.toRequestBody(mimeType.toMediaTypeOrNull() ?: "application/octet-stream".toMediaType())
+        )
+        val json = JSONObject(authed("POST", "/attachments", raw = builder.build()))
+        return json.optJSONObject("message") ?: JSONObject()
+    }
+
+    /** Downloads an attachment or image. The bytes are private and need the bearer token. */
+    suspend fun downloadBytes(path: String, retry: Boolean = true): ByteArray {
+        val token = tokens.accessToken ?: throw ApiException(401, "Not signed in")
+        val request = Request.Builder()
+            .url(Config.BASE_URL + path)
+            .header("Authorization", "Bearer $token")
+            .header("User-Agent", Config.USER_AGENT)
+            .build()
+        val (code, bytes) = withContext(Dispatchers.IO) {
+            http.newCall(request).execute().use { response ->
+                response.code to (response.body?.bytes() ?: ByteArray(0))
+            }
+        }
+        if (code == 401 && retry && refreshTokens()) return downloadBytes(path, retry = false)
+        if (code !in 200..299) throw ApiException(code, "Could not load the file (HTTP $code)")
+        return bytes
+    }
+
+    /** Public check: whether SocialTap has Google sign-in configured. */
+    suspend fun googleSignInEnabled(): Boolean = try {
+        val text = withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .url(Config.BASE_URL + "/api/auth/google/config")
+                .header("User-Agent", Config.USER_AGENT)
+                .build()
+            http.newCall(request).execute().use { it.body?.string().orEmpty() }
+        }
+        JSONObject(text).optBoolean("enabled", false)
+    } catch (e: Exception) {
+        false
+    }
+
     suspend fun notifications(since: Long): JSONObject =
         JSONObject(authed("GET", "/api/notifications?since=$since"))
 
@@ -102,10 +155,12 @@ class SocialTapApi(private val tokens: TokenStore) {
         path: String,
         form: Map<String, String>? = null,
         json: JSONObject? = null,
+        raw: RequestBody? = null,
         retry: Boolean = true
     ): String {
         val token = tokens.accessToken ?: throw ApiException(401, "Not signed in")
         val body: RequestBody? = when {
+            raw != null -> raw
             json != null -> json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
             form != null -> FormBody.Builder().apply { form.forEach { (k, v) -> add(k, v) } }.build()
             method == "POST" -> FormBody.Builder().build()
@@ -124,7 +179,7 @@ class SocialTapApi(private val tokens: TokenStore) {
             }
         }
         if (code == 401 && retry && refreshTokens()) {
-            return authed(method, path, form, json, retry = false)
+            return authed(method, path, form, json, raw, retry = false)
         }
         if (code !in 200..299) throw ApiException(code, errorMessage(text, code))
         return text

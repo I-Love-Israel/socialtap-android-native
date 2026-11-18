@@ -11,6 +11,7 @@ class SocialTapApp : Application() {
     val realtime: RealtimeClient by lazy { RealtimeClient(tokens, api) }
     val sync: MessageSync by lazy { MessageSync(this) }
     val calls: CallManager by lazy { CallManager(this) }
+    val browserFlow: OAuthBrowserFlow by lazy { OAuthBrowserFlow(api) }
 
     /** Emits when the server says a chat changed, so open screens can refresh. */
     val chatChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 16)

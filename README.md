@@ -10,6 +10,11 @@ Native Android client for SocialTap: sign in, read and send chat messages, get m
 - **Message notifications**: new messages from other people are posted as notifications.
 - **Voice calls**: start, ring, accept, decline and hang up calls in two-person chats. Audio goes through SocialTap's server relay as mono IMA ADPCM (8 kHz, 50 ms packets), the same format the web client uses. Calls keep running with the microphone foreground service.
 - **Incoming calls**: a full-screen call notification with Answer and Decline, shown over the lock screen.
+- **Google sign-in**: "Sign in with Google" appears when SocialTap has Google sign-in enabled. Google runs in the browser, then the app finishes the OAuth approval, so it ends with the same tokens as the normal sign-in.
+- **Files and images**: attach any file up to 10 MB (with an optional caption). Images preview in the chat and full screen. Other files open in a suitable app on your phone.
+- **Own messages on the right**: your messages are on the right, other people's on the left. The app learns your account ID from your account (needs the `account.read` permission) or from your first sent message.
+- **Dark mode**: follows the system setting by default. The "Auto / Light / Dark" button in the chat list changes it.
+- **Connection notice**: if Android is hiding SocialTap's notifications, a banner asks you to allow them, because the background connection and message alerts need them.
 
 ## OAuth client
 
