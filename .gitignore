@@ -1,0 +1,16 @@
+# Build output and local machine files
+build/
+app/build/
+.gradle/
+.idea/
+*.iml
+local.properties
+.kotlin/
+
+# Release signing: never commit keys or passwords
+keystore.properties
+*.jks
+*.keystore
+
+# APKs are shipped as GitHub Release assets, not committed
+*.apk
